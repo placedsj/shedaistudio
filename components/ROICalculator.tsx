@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo } from 'react';
 import { COMPARISON_DATA } from '../constants';
 

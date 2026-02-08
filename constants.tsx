@@ -1,5 +1,6 @@
 
-import { ShedStyleType, ShedData, NatureAsset, Article, RoofingJoke, UpgradeItem } from './types';
+
+import { ShedStyleType, ShedData, NatureAsset, Article, RoofingJoke, UpgradeItem, WeatherType } from './types';
 
 export const SHED_DB: Record<ShedStyleType, ShedData> = {
     'A-Frame': { price: 6531, rVal: 12, baseArea: 180, walls: "", roof: "", gable: "", floor: "" },
@@ -111,3 +112,6 @@ export const COMPARISON_DATA = {
     competitorPrice: 6800,
     savings: 1700
 };
+
+// Exporting a list of valid weather types for consistent validation
+export const VALID_WEATHER_TYPES: WeatherType[] = ['clear', 'rain', 'snow'];

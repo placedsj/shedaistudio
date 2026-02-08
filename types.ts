@@ -1,4 +1,5 @@
 
+
 export type WeatherType = 'clear' | 'rain' | 'snow';
 export type MaterialType = 'Vinyl' | 'Cedar' | 'Metal';
 export type ShedStyleType = 'A-Frame' | 'Modern Studio' | 'Gable' | 'Quaker' | 'Lofted Barn' | 'Utility';
@@ -8,10 +9,14 @@ export type RenderMode = '3D' | 'BLUEPRINT';
 export type SidingType = 'lap' | 'board';
 export type DoorType = 'single' | 'double' | 'french';
 
+export type ImageSizeType = '1K' | '2K' | '4K';
+export type VideoAspectRatio = '16:9' | '9:16';
+
 export interface ChatMessage {
   role: 'user' | 'ai';
   text: string;
-  advice?: string; // New: LUNAI's architectural reasoning
+  advice?: string; // LUNAI's architectural reasoning
+  groundingUrls?: { uri: string, title?: string }[]; // URLs from Google Search/Maps grounding
 }
 
 export interface LandscapeItem {
@@ -19,7 +24,7 @@ export interface LandscapeItem {
   x: number;
   y: number;
   scale: number;
-  layer: 'bg' | 'fg'; // New: Parallax layering
+  layer: 'bg' | 'fg'; // Parallax layering
 }
 
 export interface ShedAddons {
@@ -54,7 +59,7 @@ export interface ShedSpec {
   width: number;
   depth: number;
   electricalTier?: string | null;
-  audioEnabled: boolean; // New: Atmosphere toggle
+  audioEnabled: boolean; // Atmosphere toggle
 }
 
 export interface CostEstimate {
@@ -105,3 +110,29 @@ export interface RoofingJoke {
   question: string;
   answer: string;
 }
+
+// LUNAI response types
+export interface LLMConfigResponse {
+    style?: string;
+    weather?: string;
+    width?: number;
+    depth?: number;
+    pitch?: number;
+    wallColor?: string;
+    addons?: {
+        ramp?: boolean;
+        solar?: boolean;
+        ac?: boolean;
+        shedLoo?: boolean;
+    };
+    electricalTier?: string; // Added electricalTier
+    explanation?: string;
+    advice?: string;
+}
+
+export interface GenerateConfigResponseText {
+    text: string;
+    groundingUrls?: { uri: string, title?: string }[];
+}
+
+export type GenerateConfigResponse = (LLMConfigResponse & { groundingUrls?: { uri: string, title?: string }[] }) | GenerateConfigResponseText;

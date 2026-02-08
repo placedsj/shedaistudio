@@ -1,4 +1,5 @@
 
+
 export const BRAND_CONFIG = {
     'placed': {
         logoLetter: 'P',

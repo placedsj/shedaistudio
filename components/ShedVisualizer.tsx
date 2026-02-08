@@ -1,25 +1,24 @@
+
 import React, { useMemo } from 'react';
-import { ShedSpec, WeatherType, NatureAsset } from '../types';
-import { SHED_DB, TERRAINS, NATURE_ASSETS, DOOR_OPTIONS } from '../constants';
+import { ShedSpec, WeatherType } from '../types';
+import { TERRAINS, NATURE_ASSETS, DOOR_OPTIONS } from '../constants';
 
 interface ShedVisualizerProps {
     spec: ShedSpec;
-    weather: WeatherType; // Explicitly passed, though also in spec.weather
-    focalFeature?: string | null;
+    weather: WeatherType;
 }
 
-const ShedVisualizer: React.FC<ShedVisualizerProps> = ({ spec, weather, focalFeature }) => {
+const ShedVisualizer: React.FC<ShedVisualizerProps> = ({ spec, weather }) => {
     const isBlueprint = spec.renderMode === 'BLUEPRINT';
     const terrainData = TERRAINS.find(t => t.id === spec.terrain) || TERRAINS[0];
+    const isNight = spec.time > 80 || spec.time < 20;
     
-    // SCALE ENGINE: 1ft = 15 units
     const sW = spec.width * 15;
     const sD = spec.depth * 15;
     const wTop = -120;
     const wL = -sW / 2;
     const wR = sW / 2;
 
-    // GEOMETRY ENGINE
     const geo = useMemo(() => {
         const roofHeight = sW * (spec.pitch / 24);
         const depthOffset = sD * 0.4;
@@ -35,36 +34,6 @@ const ShedVisualizer: React.FC<ShedVisualizerProps> = ({ spec, weather, focalFea
             };
         }
 
-        if (spec.style === 'Quaker') {
-            const quakerPeakY = wTop - (roofHeight * 1.6);
-            const quakerPeakX = wL + (sW * 0.7); 
-            const frontEaveY = wTop + 15;
-            return {
-                walls: `M${wR} 0 L${wR} ${wTop} L${wL} ${wTop} L${wL} 0 Z`,
-                walls3D: `M${wR} 0 L${wR + depthOffset} ${-depthOffset} L${wR + depthOffset} ${wTop - depthOffset} L${wR} ${wTop} Z`,
-                roof: `M${wL-15} ${wTop-5} L${quakerPeakX} ${quakerPeakY} L${wR+15} ${frontEaveY} L${wR+depthOffset+15} ${frontEaveY-depthOffset} L${quakerPeakX+depthOffset} ${quakerPeakY-depthOffset} L${wL+depthOffset-15} ${wTop-depthOffset-5} Z`,
-                sideRoof: `M${quakerPeakX} ${quakerPeakY} L${wR+15} ${frontEaveY} L${wR+depthOffset+15} ${frontEaveY-depthOffset} L${quakerPeakX+depthOffset} ${quakerPeakY-depthOffset} Z`,
-                gable: `M${wL} ${wTop} L${quakerPeakX} ${quakerPeakY} L${wR} ${wTop} Z`,
-                floor: `M${wL} 0 L${wR} 0 L${wR + depthOffset} ${-depthOffset} L${wL + depthOffset} ${-depthOffset} Z`
-            };
-        }
-
-        if (spec.style === 'Lofted Barn') {
-            const lowerPeakY = wTop - (roofHeight * 0.7);
-            const highPeakY = wTop - (roofHeight * 1.5);
-            const knuckleX = sW * 0.38;
-            
-            return {
-                walls: `M${wR} 0 L${wR} ${wTop} L${wL} ${wTop} L${wL} 0 Z`,
-                walls3D: `M${wR} 0 L${wR + depthOffset} ${-depthOffset} L${wR + depthOffset} ${wTop - depthOffset} L${wR} ${wTop} Z`,
-                roof: `M${wL-5} ${wTop} L${-knuckleX} ${lowerPeakY} L0 ${highPeakY} L${knuckleX} ${lowerPeakY} L${wR+5} ${wTop} Z`,
-                sideRoof: `M0 ${highPeakY} L${knuckleX} ${lowerPeakY} L${wR+5} ${wTop} L${wR+depthOffset+5} ${wTop-depthOffset} L${knuckleX+depthOffset} ${lowerPeakY-depthOffset} L${depthOffset} ${highPeakY-depthOffset} Z`,
-                gable: `M${wL} ${wTop} L${-knuckleX} ${lowerPeakY} L0 ${highPeakY} L${knuckleX} ${lowerPeakY} L${wR} ${wTop} Z`,
-                floor: `M${wL} 0 L${wR} 0 L${wR + depthOffset} ${-depthOffset} L${wL + depthOffset} ${-depthOffset} Z`
-            };
-        }
-
-        // Default Gable / Utility / A-Frame
         const peak = wTop - roofHeight;
         return {
             walls: `M${wR} 0 L${wR} ${wTop} L${wL} ${wTop} L${wL} 0 Z`,
@@ -80,140 +49,66 @@ const ShedVisualizer: React.FC<ShedVisualizerProps> = ({ spec, weather, focalFea
     const trimColor = isBlueprint ? 'white' : spec.trimColor;
     const roofColor = isBlueprint ? 'none' : (weather === 'snow' ? '#f8fafc' : '#1e293b');
     const lineColor = isBlueprint ? 'white' : '#020617';
-
-    const env = useMemo(() => {
-        const t = spec.time;
-        let shadowSkew = t < 50 ? 60 - (t / 50) * 60 : -((t - 50) / 50) * 60;
-        const isNight = t > 80 || t < 20;
-        const isInterior = spec.viewMode === 'interior';
-        return { shadowSkew, isNight, isInterior };
-    }, [spec.time, spec.viewMode]);
-
-    const sidingFill = spec.sidingType === 'lap' ? "url(#lapSiding)" : "url(#boardSiding)";
-
-    const renderQueue = useMemo(() => {
-        const queue: { type: 'shed' | 'prop', y: number, data?: any }[] = [{ type: 'shed', y: 0 }];
-        spec.landscape.forEach(item => queue.push({ type: 'prop', y: item.y, data: item }));
-        return queue.sort((a, b) => a.y - b.y);
-    }, [spec.landscape]);
+    const shadowSkew = spec.time < 50 ? 60 - (spec.time / 50) * 60 : -((spec.time - 50) / 50) * 60;
 
     return (
-        <svg viewBox="0 0 500 500" className={`w-full max-w-[850px] h-auto relative z-10 transition-all duration-700 overflow-visible ${isBlueprint ? 'filter-[url(#sketch)]' : 'drop-shadow-2xl'}`}>
+        <svg viewBox="0 0 500 500" className="w-full max-w-[850px] h-auto transition-all duration-700 overflow-visible drop-shadow-2xl">
             <defs>
                 <filter id="blurShadow"><feGaussianBlur in="SourceGraphic" stdDeviation="5" /></filter>
-                <filter id="sketch">
-                    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" result="noise" />
-                    <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" />
-                </filter>
-                
-                {/* Enhanced Horizontal Lap Siding Pattern */}
+                <filter id="glow"><feGaussianBlur stdDeviation="3" result="cb"/><feMerge><feMergeNode in="cb"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
                 <pattern id="lapSiding" width="100" height="15" patternUnits="userSpaceOnUse">
                     <rect width="100" height="15" fill={wallColor} />
-                    {/* Bevel/Shadow effect for overlap */}
-                    <rect width="100" height="2" y="13" fill="black" fillOpacity="0.15" />
-                    <line x1="0" y1="13" x2="100" y2="13" stroke="black" strokeOpacity="0.1" strokeWidth="0.5" />
-                    <line x1="0" y1="0" x2="100" y2="0" stroke="white" strokeOpacity="0.05" strokeWidth="0.5" />
+                    <rect width="100" height="1.5" y="13.5" fill="black" fillOpacity="0.1" />
                 </pattern>
-                
-                {/* Enhanced Board & Batten Siding Pattern */}
                 <pattern id="boardSiding" width="24" height="100" patternUnits="userSpaceOnUse">
                     <rect width="24" height="100" fill={wallColor} />
-                    {/* The "Batten" */}
-                    <rect width="4" height="100" x="20" fill={wallColor} />
-                    {/* Side shadows for depth */}
-                    <rect width="1.5" height="100" x="18.5" fill="black" fillOpacity="0.1" />
-                    <rect width="0.5" height="100" x="20" fill="white" fillOpacity="0.08" />
+                    <rect width="2" height="100" x="22" fill="black" fillOpacity="0.1" />
                 </pattern>
-
-                <pattern id="floorGrid" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(-30)">
-                    <path d="M10 0 L0 0 L0 10" fill="none" stroke="white" strokeOpacity="0.1" strokeWidth="0.5" />
-                </pattern>
-
-                 <pattern id="blueGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0 L0 0 L0 20" fill="none" stroke="white" strokeOpacity="0.1" /></pattern>
             </defs>
 
             <g transform="translate(250, 360)">
                 {!isBlueprint && (
-                    <g transform={`skewX(${env.shadowSkew}) translate(${env.shadowSkew * -1.5}, 0)`}>
-                        <ellipse cx="0" cy="10" rx={sW/1.5} ry="35" fill="#000" opacity={weather === 'clear' ? "0.4" : "0.15"} filter="url(#blurShadow)" />
+                    <g transform={`skewX(${shadowSkew}) translate(${shadowSkew * -1.5}, 0)`}>
+                        <ellipse cx="0" cy="10" rx={sW/1.2} ry="30" fill="#000" opacity={weather === 'clear' ? "0.4" : "0.1"} filter="url(#blurShadow)" />
                     </g>
                 )}
 
-                {!isBlueprint && <path d="M-220 0 L0 80 L220 0 L0 -80 Z" fill={terrainData.color} className="transition-colors duration-1000" />}
+                <path d="M-250 10 L0 100 L250 10 L0 -80 Z" fill={terrainData.color} className="transition-colors duration-1000 opacity-80" />
 
-                {renderQueue.map((obj, index) => {
-                    if (obj.type === 'shed') {
-                        return (
-                            <g key="shed-group" className="transition-all duration-1000">
-                                <g opacity={env.isInterior ? 1 : 0} className="transition-opacity duration-500">
-                                    <path d={geo.floor} fill="#334155" stroke={lineColor} strokeWidth="1" />
-                                    <path d={geo.floor} fill="url(#floorGrid)" />
-                                </g>
+                {spec.landscape.filter(l => l.layer === 'bg').map((p, i) => (
+                    <g key={`bg-${i}`} transform={`translate(${p.x}, ${p.y - 10}) scale(${p.scale})`}>
+                        <path d={NATURE_ASSETS.find(n => n.id === p.id)?.path} fill="#020617" opacity="0.4" className="animate-[sway_4s_ease-in-out_infinite]" />
+                    </g>
+                ))}
 
-                                {!isBlueprint && (
-                                    <g>
-                                        <path d={geo.walls3D} fill={sidingFill} stroke={lineColor} strokeWidth="1" />
-                                        <path d={geo.walls3D} fill="black" fillOpacity="0.2" />
-                                    </g>
-                                )}
-                                <path d={geo.walls} fill={sidingFill} stroke={lineColor} strokeWidth={isBlueprint ? 1.5 : 1.2} />
+                <g className="transition-all duration-1000">
+                    <path d={geo.walls3D} fill={spec.sidingType === 'lap' ? "url(#lapSiding)" : "url(#boardSiding)"} stroke={lineColor} />
+                    <path d={geo.walls3D} fill="black" fillOpacity="0.2" />
+                    <path d={geo.walls} fill={spec.sidingType === 'lap' ? "url(#lapSiding)" : "url(#boardSiding)"} stroke={lineColor} />
 
-                                <g className="transition-all duration-700" style={{ transform: env.isInterior ? 'translateY(-150px)' : 'translateY(0px)' }}>
-                                    {spec.style !== 'Modern Studio' && !isBlueprint && (
-                                        <g>
-                                            <path d={geo.sideRoof} fill={roofColor} stroke={lineColor} strokeWidth="1" />
-                                            <path d={geo.sideRoof} fill="black" fillOpacity="0.2" />
-                                        </g>
-                                    )}
-                                    <path d={geo.roof} fill={roofColor} stroke={lineColor} strokeWidth={isBlueprint ? 1.5 : 1.2} />
-                                    <path d={geo.gable} fill={wallColor} stroke={lineColor} strokeWidth={isBlueprint ? 1.5 : 1.2} />
-                                    <path d={geo.roof} fill="none" stroke={trimColor} strokeWidth="4" />
-                                </g>
+                    {isNight && !isBlueprint && (
+                        <g transform="translate(-40, -80)" filter="url(#glow)">
+                            <rect width="20" height="20" fill="#fde047" opacity="0.6" />
+                            <rect width="20" height="20" fill="none" stroke="#ca8a04" strokeWidth="1" />
+                        </g>
+                    )}
 
-                                <g transform={`translate(${spec.doorType === 'double' ? -35 : -20}, -95)`} opacity={env.isInterior ? 0.3 : 1}>
-                                    {DOOR_OPTIONS.find(d => d.id === spec.doorType)?.path.split('M').slice(1).map((p, i) => (
-                                        <path key={i} d={`M${p}`} fill={isBlueprint ? 'none' : 'white'} stroke={lineColor} strokeWidth="2" />
-                                    ))}
-                                </g>
+                    <path d={geo.roof} fill={roofColor} stroke={lineColor} />
+                    <path d={geo.gable} fill={wallColor} stroke={lineColor} />
+                    <path d={geo.roof} fill="none" stroke={trimColor} strokeWidth="3" />
 
-                                {spec.addons.shedLoo && !env.isInterior && (
-                                    <g transform={`translate(${wL - 20}, -15)`}>
-                                        <rect width="25" height="35" fill={wallColor} stroke={lineColor} strokeWidth="1.5" rx="2" />
-                                        <path d="M0 0 L12.5 -8 L25 0" fill="none" stroke={lineColor} strokeWidth="1" />
-                                        <text x="12.5" y="22" fontSize="10" textAnchor="middle" fill={lineColor} fontWeight="900" opacity="0.6">WC</text>
-                                    </g>
-                                )}
-                            </g>
-                        );
-                    } else {
-                        // Landscape props
-                        const p = obj.data;
-                        const asset = NATURE_ASSETS.find(n => n.id === p.id);
-                        if (!asset) return null;
-                        return (
-                            <g key={`prop-${index}`} transform={`translate(${p.x}, ${p.y}) scale(${p.scale})`}>
-                                {/* Sway Animation Class */}
-                                <g className={!isBlueprint && asset.type === 'flora' ? 'animate-[sway_3s_ease-in-out_infinite]' : ''} style={{ transformOrigin: 'bottom center' }}>
-                                    <path 
-                                        d={asset.path} 
-                                        fill={isBlueprint ? "none" : asset.color} 
-                                        stroke={lineColor} 
-                                        strokeWidth={isBlueprint ? 1 : 0}
-                                        fillOpacity={isBlueprint ? 0 : 1}
-                                    />
-                                    {/* Blueprint Symbol */}
-                                    {isBlueprint && asset.type === 'flora' && (
-                                        <circle cx="0" cy="-20" r="15" stroke="white" strokeWidth="0.5" fill="url(#blueGrid)" />
-                                    )}
-                                </g>
-                                {/* Ground Shadow for Props */}
-                                {!isBlueprint && (
-                                    <ellipse cx="0" cy="5" rx="10" ry="3" fill="black" opacity="0.3" filter="blur(2px)" />
-                                )}
-                            </g>
-                        );
-                    }
-                })}
+                    <g transform={`translate(${spec.doorType === 'double' ? -35 : -20}, -95)`}>
+                        {DOOR_OPTIONS.find(d => d.id === spec.doorType)?.path.split('M').slice(1).map((p, i) => (
+                            <path key={i} d={`M${p}`} fill={isNight ? '#0f172a' : 'white'} stroke={lineColor} strokeWidth="2" />
+                        ))}
+                    </g>
+                </g>
+
+                {spec.landscape.filter(l => l.layer === 'fg').map((p, i) => (
+                    <g key={`fg-${i}`} transform={`translate(${p.x}, ${p.y}) scale(${p.scale})`}>
+                        <path d={NATURE_ASSETS.find(n => n.id === p.id)?.path} fill={NATURE_ASSETS.find(n => n.id === p.id)?.color} className="animate-[sway_3s_ease-in-out_infinite]" />
+                    </g>
+                ))}
             </g>
         </svg>
     );

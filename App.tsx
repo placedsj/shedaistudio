@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Analytics } from '@vercel/analytics/react';
@@ -5,15 +6,14 @@ import EnterpriseBuilder from './components/EnterpriseBuilder';
 import Handbook from './components/Handbook';
 import ROICalculator from './components/ROICalculator';
 import CheckoutFlow from './components/CheckoutFlow';
-import LivePowerGauge from './components/LivePowerGauge';
 import Contact from './components/Contact';
-import AdminDashboard from './components/AdminDashboard';
 import ShedLanding from './components/ShedLanding';
 import BlogSystem from './components/BlogSystem';
+import AIFeatureGallery from './components/AIFeatureGallery';
 import { ShedStyleType, ShedSpec, CostEstimate, WeatherType } from './types';
 import { BRAND_CONFIG, CURRENT_BRAND } from './config/branding';
 
-const Header = ({ onHome, onBuild, onHandbook, onCalculator, onContact, onBlog }: any) => {
+const Header = ({ onHome, onBuild, onHandbook, onCalculator, onContact, onBlog, onAIGallery }: any) => {
     const brand = BRAND_CONFIG[CURRENT_BRAND];
     return (
         <nav className="fixed top-0 left-0 right-0 z-[100] bg-white/5 backdrop-blur-xl px-10 py-5 flex justify-between items-center border-b border-white/10">
@@ -28,6 +28,7 @@ const Header = ({ onHome, onBuild, onHandbook, onCalculator, onContact, onBlog }
             </div>
             <div className="hidden xl:flex items-center gap-8 text-[10px] font-black uppercase tracking-[0.2em] text-white/50">
                 <button onClick={onBuild} className="hover:text-white transition-colors">Builder</button>
+                <button onClick={onAIGallery} className="hover:text-white transition-colors text-purple-400">AI Forge</button>
                 <button onClick={onHandbook} className="hover:text-white transition-colors">Handbook</button>
                 <button onClick={onBlog} className="hover:text-white transition-colors">Blog</button>
                 <button onClick={onCalculator} className="hover:text-white transition-colors">ROI</button>
@@ -38,7 +39,7 @@ const Header = ({ onHome, onBuild, onHandbook, onCalculator, onContact, onBlog }
 };
 
 const App: React.FC = () => {
-    const [view, setView] = useState<'landing' | 'showroom' | 'builder' | 'handbook' | 'calculator' | 'checkout' | 'contact' | 'blog'>('landing');
+    const [view, setView] = useState<'landing' | 'showroom' | 'builder' | 'handbook' | 'calculator' | 'checkout' | 'contact' | 'blog' | 'ai-gallery'>('landing');
     
     const getInitialSpecFromURL = (): ShedSpec | null => {
         const params = new URLSearchParams(window.location.search);
@@ -70,6 +71,7 @@ const App: React.FC = () => {
                 onCalculator={() => setView('calculator')}
                 onContact={() => setView('contact')}
                 onBlog={() => setView('blog')}
+                onAIGallery={() => setView('ai-gallery')}
             />
             <div className="w-full h-full overflow-y-auto no-scrollbar scroll-smooth">
                 {view === 'landing' && <ShedLanding onStart={() => setView('builder')} onHandbook={() => setView('handbook')} onCalculator={() => setView('calculator')} />}
@@ -84,6 +86,7 @@ const App: React.FC = () => {
                         }}
                     />
                 )}
+                {view === 'ai-gallery' && <AIFeatureGallery onBack={() => setView('builder')} />}
                 {view === 'blog' && <BlogSystem />}
                 {view === 'handbook' && <Handbook />}
                 {view === 'calculator' && <ROICalculator />}

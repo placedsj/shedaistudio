@@ -1,4 +1,5 @@
 
+
 import { generateClient } from 'aws-amplify/data';
 
 // Generating a generic client. 
